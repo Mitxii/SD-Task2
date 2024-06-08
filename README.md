@@ -67,4 +67,5 @@ Each component of the project is organized into its respective directory, facili
 
 
 
-python3 -m grpc_tools.protoc -I./ --python_out=. --grpc_python_out=. --pyi_out=. proto/store.proto
+python -m grpc_tools.protoc -I=proto --python_out=proto --grpc_python_out=proto proto/store.proto
+
