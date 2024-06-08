@@ -9,18 +9,19 @@ current_dir = os.path.dirname(__file__)
 # Importar classes gRPC
 proto_path = os.path.join(current_dir, "..", "proto")
 sys.path.append(proto_path)
-import store_pb2
-import store_pb2_grpc
+import store_pb2, store_pb2_grpc
 
 # Classe Node
 class Node(store_pb2_grpc.KeyValueStoreServicer):
     
-    def __init__(self):
+    def __init__(self, id):
+        self.id = id
         self.data = {}
         self.delay = 0
         
     def put(self, request, context):
         # Aquest mètode només l'implementarà el node Master
+        self.log("Put rebut per Slave. Ignorant...")
         pass
         
     def get(self, request, context):
@@ -28,7 +29,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         key = request.key
         value = self.data.get(key, "")
         found = key in self.data
-        print(f"GET [{key}, {value}]")
+        self.log(f"GET [{key}, {value}]")
         return store_pb2.GetResponse(value=value, found=found)
     
     def slowDown(self, request, context):
@@ -49,4 +50,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         self.data[key] = value
         print(f"SET [{key}, {value}]")
         return store_pb2.Empty()
+    
+    def log(self, msg):
+        print(f"[{self.id.upper()}] {msg}")
         

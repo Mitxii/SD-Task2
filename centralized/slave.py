@@ -9,8 +9,7 @@ current_dir = os.path.dirname(__file__)
 # Importar classes gRPC
 proto_path = os.path.join(current_dir, "..", "proto")
 sys.path.append(proto_path)
-import store_pb2
-import store_pb2_grpc
+import store_pb2, store_pb2_grpc
 
 # Importar altres classes
 sys.path.append(current_dir)
@@ -20,7 +19,7 @@ from node import Node
 class Slave(Node):
     
     def __init__(self):
-        super().__init__()
+        super().__init__(id)
         
     def canCommit(self, request, context):
         return store_pb2.CommitResponse(can_commit=True)
@@ -42,11 +41,11 @@ def register_to_master(master_address, slave_address):
         print(f"No s'ha pogut registrar el Slave {slave_address} al Master {master_address}")
 
 # Mètode per iniciar el servidor gRPC
-def serve(ip, port, master_address):
+def serve(id, ip, port, master_address):
     slave_address = f"{ip}:{port}"
     register_to_master(master_address, slave_address)
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Slave(), server)
+    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Slave(id), server)
     server.add_insecure_port(slave_address)
     server.start()
     print(f"Slave escoltant al port {port}...")
@@ -58,11 +57,12 @@ def serve(ip, port, master_address):
 
 # Main
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Ús: python3 slave.py <ip> <port> <master_ip:master_port>")
+    if len(sys.argv) != 5:
+        print("Ús: python3 slave.py <id> <ip> <port> <master_ip:master_port>")
         sys.exit(1)
         
-    ip = sys.argv[1]
-    port = sys.argv[2]
-    master_address = sys.argv[3]
-    serve(ip, port, master_address)
+    id = sys.argv[1]
+    ip = sys.argv[2]
+    port = sys.argv[3]
+    master_address = sys.argv[4]
+    serve(id, ip, port, master_address)

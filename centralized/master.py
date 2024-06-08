@@ -9,8 +9,7 @@ current_dir = os.path.dirname(__file__)
 # Importar classes gRPC
 proto_path = os.path.join(current_dir, "..", "proto")
 sys.path.append(proto_path)
-import store_pb2
-import store_pb2_grpc
+import store_pb2, store_pb2_grpc
 
 # Importar altres classes
 sys.path.append(current_dir)
@@ -19,8 +18,8 @@ from node import Node
 # Classe Master (filla de Node)
 class Master(Node):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, id):
+        super().__init__(id)
         self.slaves = []
         
     def put(self, request, context):
@@ -59,9 +58,9 @@ class Master(Node):
         return store_pb2.RegisterSlaveResponse(success=True)
 
 # Mètode per iniciar el servidor gRPC
-def serve(ip, port):
+def serve(id, ip, port):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Master(), server)
+    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Master(id), server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
     print(f"Master escoltant al port {port}...")
@@ -73,10 +72,11 @@ def serve(ip, port):
 
 # Main
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Ús: python3 master.py <ip> <port>")
+    if len(sys.argv) != 4:
+        print("Ús: python3 master.py <id> <ip> <port>")
         sys.exit(1)
         
-    ip = sys.argv[1]
-    port = sys.argv[2]
-    serve(ip, port)
+    id = sys.argv[1]
+    ip = sys.argv[2]
+    port = sys.argv[3]
+    serve(id, ip, port)
