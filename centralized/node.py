@@ -1,8 +1,11 @@
 import sys
 import os
-import grpc
 import time
+import colorama
 from concurrent import futures
+
+# Inicialitzar colors terminal
+colorama.init()
 
 current_dir = os.path.dirname(__file__)
 
@@ -24,18 +27,22 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         pass
         
     def get(self, request, context):
-        time.sleep(self.delay)
         key = request.key
         value = self.data.get(key, "")
         found = key in self.data
+        self.log(f"get key={key} -> value={value}")
+        time.sleep(self.delay)
         return store_pb2.GetResponse(value=value, found=found)
     
     def slowDown(self, request, context):
         self.delay = request.seconds
+        self.log(f"delayed with {self.delay} sec")
+        time.sleep(self.delay)
         return store_pb2.SlowDownResponse(success=True)
     
     def restore(self, request, context):
         self.delay = 0
+        self.log(f"delayed restored")
         return store_pb2.SlowDownResponse(success=True)
     
     def canCommit(self, request, context):
@@ -46,8 +53,10 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         key = request.key
         value = request.value
         self.data[key] = value
+        self.log(f"set key={key}, value={value}")
+        time.sleep(self.delay)
         return store_pb2.Empty()
     
     def log(self, msg):
-        print(f"[{self.id.upper()}] {msg}")
+        print(f"{colorama.Fore.YELLOW}[{self.id}]{colorama.Fore.RESET} {msg}")
         

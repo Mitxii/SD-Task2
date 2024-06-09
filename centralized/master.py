@@ -29,13 +29,18 @@ class Master(Node):
         # Protocol 2PC
         if self.two_phase_commit(key, value):
             self.data[key] = value
+            self.log(f"2PC success -> set key={key}, value={value}")
+            time.sleep(self.delay)
             return store_pb2.PutResponse(success=True)
         else:
+            self.log("2PC failed")
+            time.sleep(self.delay)
             return store_pb2.PutResponse(success=False)
         
     def two_phase_commit(self, key, value):
         can_commit = True
         
+        self.log("2PC request")
         for slave_stub in self.slaves:
             response = slave_stub.canCommit(store_pb2.CommitRequest(key=key, value=value))
             if not response.can_commit:
