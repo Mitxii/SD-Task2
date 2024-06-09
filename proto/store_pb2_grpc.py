@@ -49,11 +49,6 @@ class KeyValueStoreStub(object):
                 request_serializer=store__pb2.Empty.SerializeToString,
                 response_deserializer=store__pb2.Empty.FromString,
                 )
-        self.haveCommited = channel.unary_unary(
-                '/distributedstore.KeyValueStore/haveCommited',
-                request_serializer=store__pb2.Empty.SerializeToString,
-                response_deserializer=store__pb2.Empty.FromString,
-                )
         self.registerSlave = channel.unary_unary(
                 '/distributedstore.KeyValueStore/registerSlave',
                 request_serializer=store__pb2.RegisterSlaveRequest.SerializeToString,
@@ -107,12 +102,6 @@ class KeyValueStoreServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def haveCommited(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def registerSlave(self, request, context):
         """RPC per registrar Slaves al Master
         """
@@ -155,11 +144,6 @@ def add_KeyValueStoreServicer_to_server(servicer, server):
             ),
             'doAbort': grpc.unary_unary_rpc_method_handler(
                     servicer.doAbort,
-                    request_deserializer=store__pb2.Empty.FromString,
-                    response_serializer=store__pb2.Empty.SerializeToString,
-            ),
-            'haveCommited': grpc.unary_unary_rpc_method_handler(
-                    servicer.haveCommited,
                     request_deserializer=store__pb2.Empty.FromString,
                     response_serializer=store__pb2.Empty.SerializeToString,
             ),
@@ -292,23 +276,6 @@ class KeyValueStore(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/doAbort',
-            store__pb2.Empty.SerializeToString,
-            store__pb2.Empty.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def haveCommited(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/haveCommited',
             store__pb2.Empty.SerializeToString,
             store__pb2.Empty.FromString,
             options, channel_credentials,
