@@ -163,7 +163,7 @@ class TestCentralizedSystem(unittest.TestCase):
             except grpc.FutureTimeoutError:
                 continue
         return False
-    '''
+    
     def test_put_success(self):
         """Test that a successful put operation correctly updates the data."""
         self.logger.info("Testing put success...")
@@ -233,7 +233,7 @@ class TestCentralizedSystem(unittest.TestCase):
         print(f"Performed {sum([ f.result() for f in futures])} operations in {duration:.2f} seconds.")
         
         assert duration < 10, "The system took too long to perform the operations."
-
+    
     def test_system_scalability_and_performance_with_slowdown_slave(self):
 
         """Test the system's scalability and performance by simulating high concurrent access (with a partitioned slave)."""
@@ -281,7 +281,7 @@ class TestCentralizedSystem(unittest.TestCase):
         assert restore_resp.success, "Failed to restore slave."
 
         assert duration < 10, "The system took too long to perform the operations."
-  
+    
     def test_system_scalability_and_performance_with_slowdown_master(self):
 
         """Test the system's scalability and performance by simulating high concurrent access (with a partitioned master)."""
@@ -327,7 +327,7 @@ class TestCentralizedSystem(unittest.TestCase):
         assert restore_resp.success, "Failed to restore master."
 
         assert duration < 10, "The system took too long to perform the operations."
-    '''
+    
     def test_state_recovery_after_critical_failure(self):
         """Test the system's ability to recover state after a critical failure."""
 

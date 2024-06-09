@@ -4,8 +4,10 @@ import sys
 import os
 import signal
 import pickle
+import threading
 from concurrent import futures
 
+# Obtenir path del directori actual
 current_dir = os.path.dirname(__file__)
 
 # Importar classes gRPC
@@ -20,6 +22,7 @@ from node import Node
 # Classe Master (filla de Node)
 class Master(Node):
     
+    # Constructor
     def __init__(self, id):
         super().__init__(id)
         # Slaves registrats
@@ -28,6 +31,7 @@ class Master(Node):
         self.persistent_file = f"centralized/{id}_data.pkl"
         self.load_state()
         
+    # Mètode per guardar una dada
     def put(self, request, context):
         key = request.key
         value = request.value
@@ -40,14 +44,16 @@ class Master(Node):
             time.sleep(self.delay)
             return store_pb2.PutResponse(success=True)
         else:
-            self.log("2PC failed")
+            self.log("2PC failed. Aborting...")
             time.sleep(self.delay)
             return store_pb2.PutResponse(success=False)
-        
+    
+    # Mètode per implementar el protocol 2PC
     def two_phase_commit(self, key, value):
+        self.log("Starting 2PC...")
         can_commit = True
         
-        self.log("Starting 2PC...")
+        # Fase 1 (votació)
         i = 1
         for slave_stub in self.slaves:
             self.log(f"2PC request {i}")
@@ -56,23 +62,28 @@ class Master(Node):
             if not response.can_commit:
                 can_commit = False
                 break
-            
+        
+        # Fase 2 (decisió)
         if can_commit:
             for slave_stub in self.slaves:
-                slave_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))
+                # El doCommit s'executa en un thread per evitar delays dels Slaves
+                threading.Thread(target=lambda: slave_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))).start()
             return True
-        
+    
+    # Mètode per guardar l'estat actual
     def save_state(self):
         with open(self.persistent_file, 'wb') as f:
             pickle.dump(self.data, f)
     
+    # Mètode per carregar l'estat guardat
     def load_state(self):
         if os.path.exists(self.persistent_file):
             with open(self.persistent_file, 'rb') as f:
                 self.data = pickle.load(f)
         else:
             self.data = {}
-        
+    
+    # Mètode per registrar un Slave i passar-li l'estat actual
     def registerSlave(self, request, context):
         slave_address = request.address
         channel = grpc.insecure_channel(slave_address)

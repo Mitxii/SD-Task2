@@ -5,6 +5,7 @@ import os
 import signal
 from concurrent import futures
 
+# Obtenir path del directori actual
 current_dir = os.path.dirname(__file__)
 
 # Importar classes gRPC
@@ -19,11 +20,13 @@ from node import Node
 # Classe Slave (filla de Node)
 class Slave(Node):
     
+    # Constructor
     def __init__(self, id, state):
         super().__init__(id)
-        self.action = ""
+        # L'estat inicial és l'obtingut al registrar-se al master per mantenir una consistència
         self.data = state 
     
+    # Mètode per respondre a un 2PC
     def canCommit(self, request, context):
         self.log("2PC available")
         time.sleep(self.delay)
@@ -36,6 +39,7 @@ def register_to_master(master_address, slave_address):
     response = stub.registerSlave(store_pb2.RegisterSlaveRequest(address=slave_address))
     if response.success:
         print(f"Slave {slave_address} registrat correctament al Master {master_address}")
+        # Retornar l'estat del Master
         return response.state
     else:
         print(f"No s'ha pogut registrar el Slave {slave_address} al Master {master_address}")
