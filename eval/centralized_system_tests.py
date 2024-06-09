@@ -170,14 +170,14 @@ class TestCentralizedSystem(unittest.TestCase):
         args = store_pb2.PutRequest(key="test_key", value="test_value")
         response = self.stub_put.put(args)
         self.assertTrue(response.success)
-'''
+
     def test_get_correctness(self):
         """Ensure get retrieves the correct value for a given key."""
         self.logger.info("Testing get correctness...")
         self.stub_put.put(store_pb2.PutRequest(key="test_key", value="test_value"))
         response = random.choice(self.stubs_get).get(store_pb2.GetRequest(key="test_key"))
         self.assertEqual(response.value, "test_value")
-
+'''
     def test_concurrent_access(self):
         """Test handling of concurrent put and get requests."""
         self.logger.info("Testing concurrent access...")

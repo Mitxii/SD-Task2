@@ -1,4 +1,6 @@
 import subprocess
+import sys
+import signal
 import time
 import yaml
 
@@ -14,6 +16,14 @@ def start_slave(id, ip, port, master_ip, master_port):
 def load_config(config_file):
     with open(config_file, "r") as file:
         return yaml.safe_load(file)
+
+# Funció per gestionar les senyals SIGINT i SIGTERM
+def signal_handler(sig, frame):
+    print(f'Signal {sig} received. Terminating processes gracefully.')
+    master_process.terminate()
+    for slave_process in slave_processess:
+        slave_process.terminate()
+    sys.exit(0)
 
 # Main
 if __name__ == "__main__":
@@ -36,12 +46,14 @@ if __name__ == "__main__":
         slave_process = start_slave(slave_id, slave_ip, slave_port, master_ip, master_port)
         slave_processess.append(slave_process)
         
+    # Assignar el gestor de senyals per SIGINT i SIGTERM
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)    
+        
     try:
         master_process.wait()
         for slave_process in slave_processess:
             slave_process.wait()
     except KeyboardInterrupt:
-        master_process.terminate()
-        for slave_process in slave_processess:
-            slave_process.terminate()
+        signal_handler(signal.SIGINT, None)
     

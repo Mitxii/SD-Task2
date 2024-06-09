@@ -2,6 +2,7 @@ import grpc
 import time
 import sys
 import os
+import signal
 from concurrent import futures
 
 current_dir = os.path.dirname(__file__)
@@ -70,11 +71,22 @@ def serve(id, ip, port):
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
     print(f"Master escoltant al port {port}...")
+    
+    # Funció per gestionar les senyals SIGINT i SIGTERM
+    def signal_handler(sig, frame):
+        print(f"Parant {id}...")
+        server.stop(0)
+        sys.exit(0)
+
+    # Assignar el gestor de senyals per SIGINT i SIGTERM
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     try:
         while True:
             time.sleep(86400)
     except KeyboardInterrupt:
-        server.stop(0)
+        signal_handler(signal.SIGINT, None)
 
 # Main
 if __name__ == "__main__":
