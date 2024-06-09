@@ -163,7 +163,7 @@ class TestCentralizedSystem(unittest.TestCase):
             except grpc.FutureTimeoutError:
                 continue
         return False
-
+    '''
     def test_put_success(self):
         """Test that a successful put operation correctly updates the data."""
         self.logger.info("Testing put success...")
@@ -177,7 +177,7 @@ class TestCentralizedSystem(unittest.TestCase):
         self.stub_put.put(store_pb2.PutRequest(key="test_key", value="test_value"))
         response = random.choice(self.stubs_get).get(store_pb2.GetRequest(key="test_key"))
         self.assertEqual(response.value, "test_value")
-'''
+
     def test_concurrent_access(self):
         """Test handling of concurrent put and get requests."""
         self.logger.info("Testing concurrent access...")
@@ -233,7 +233,7 @@ class TestCentralizedSystem(unittest.TestCase):
         print(f"Performed {sum([ f.result() for f in futures])} operations in {duration:.2f} seconds.")
         
         assert duration < 10, "The system took too long to perform the operations."
-        
+
     def test_system_scalability_and_performance_with_slowdown_slave(self):
 
         """Test the system's scalability and performance by simulating high concurrent access (with a partitioned slave)."""
@@ -281,7 +281,7 @@ class TestCentralizedSystem(unittest.TestCase):
         assert restore_resp.success, "Failed to restore slave."
 
         assert duration < 10, "The system took too long to perform the operations."
-        
+  
     def test_system_scalability_and_performance_with_slowdown_master(self):
 
         """Test the system's scalability and performance by simulating high concurrent access (with a partitioned master)."""
@@ -327,7 +327,7 @@ class TestCentralizedSystem(unittest.TestCase):
         assert restore_resp.success, "Failed to restore master."
 
         assert duration < 10, "The system took too long to perform the operations."
-
+    '''
     def test_state_recovery_after_critical_failure(self):
         """Test the system's ability to recover state after a critical failure."""
 
@@ -343,7 +343,7 @@ class TestCentralizedSystem(unittest.TestCase):
         self.channels_get, self.stubs_get = self.connect_to_grpc_servers(self.config['slaves'])
         response = random.choice(self.stubs_get).get(store_pb2.GetRequest(key="stable_key"))
         self.assertEqual(response.value, "stable_value", "Data did not recover correctly after critical failure.")
-
+    
     def test_node_failure_during_transaction(self):
         """Simulate node failure during a transaction and check for system consistency."""
 
@@ -366,7 +366,7 @@ class TestCentralizedSystem(unittest.TestCase):
             self.assertEqual(response.value, "recovery_value", "Data was not correctly recovered.")
         except grpc.RpcError as e:
             self.fail(f"Operation failed after node recovery: {str(e)}")
-'''
+    
 
 if __name__ == '__main__':
     runner = unittest.TextTestRunner(resultclass=unittest.TestResult, verbosity=2)

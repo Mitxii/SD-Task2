@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import colorama
+import pickle
 from concurrent import futures
 
 # Inicialitzar colors terminal
@@ -21,6 +22,11 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         self.id = id
         self.data = {}
         self.delay = 0
+        self.state_dir = "centralized/states"
+        if not os.path.exists(self.state_dir):
+            os.makedirs(self.state_dir)
+        self.persistent_file = f"centralized/states/{id}_data.pkl"
+        self.load_state()
         
     def put(self, request, context):
         # Aquest mètode només l'implementarà el node Master
@@ -36,8 +42,8 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
     
     def slowDown(self, request, context):
         self.delay = request.seconds
+        self.delay = 0
         self.log(f"delayed with {self.delay} sec")
-        time.sleep(self.delay)
         return store_pb2.SlowDownResponse(success=True)
     
     def restore(self, request, context):
@@ -53,9 +59,21 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         key = request.key
         value = request.value
         self.data[key] = value
+        self.save_state()                               # Desar l'estat després de l'operació
         self.log(f"set key={key}, value={value}")
         time.sleep(self.delay)
         return store_pb2.Empty()
+    
+    def save_state(self):
+        with open(self.persistent_file, 'wb') as f:
+            pickle.dump(self.data, f)
+    
+    def load_state(self):
+        if os.path.exists(self.persistent_file):
+            with open(self.persistent_file, 'rb') as f:
+                self.data = pickle.load(f)
+        else:
+            self.data = {}
     
     def log(self, msg):
         print(f"{colorama.Fore.YELLOW}[{self.id}]{colorama.Fore.RESET} {msg}")

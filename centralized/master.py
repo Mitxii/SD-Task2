@@ -30,6 +30,7 @@ class Master(Node):
         # Protocol 2PC
         if self.two_phase_commit(key, value):
             self.data[key] = value
+            self.save_state()                               # Desar l'estat després de l'operació
             self.log(f"set key={key}, value={value}")
             time.sleep(self.delay)
             return store_pb2.PutResponse(success=True)

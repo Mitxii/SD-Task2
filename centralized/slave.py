@@ -24,8 +24,8 @@ class Slave(Node):
         self.action = ""
         
     def canCommit(self, request, context):
-        time.sleep(self.delay)
         self.log("2PC available")
+        time.sleep(self.delay)
         return store_pb2.CommitResponse(can_commit=True)
 
 # Mètode per registrar el Slave al Master
