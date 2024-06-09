@@ -22,12 +22,11 @@ class Master(Node):
         super().__init__(id)
         self.slaves = []
         
-    def put(self, request, context):
+    def put(self, request, context):        
         key = request.key
         value = request.value
         
         # Protocol 2PC
-        print("2PC")
         if self.two_phase_commit(key, value):
             self.data[key] = value
             return store_pb2.PutResponse(success=True)

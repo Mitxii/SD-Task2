@@ -18,17 +18,11 @@ from node import Node
 # Classe Slave (filla de Node)
 class Slave(Node):
     
-    def __init__(self):
+    def __init__(self, id):
         super().__init__(id)
         
     def canCommit(self, request, context):
         return store_pb2.CommitResponse(can_commit=True)
-        
-    def doCommit(self, request, context):
-        key = request.key
-        value = request.value
-        self.data[key] = value
-        return store_pb2.Empty()
 
 # Mètode per registrar el Slave al Master
 def register_to_master(master_address, slave_address):
