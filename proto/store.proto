@@ -9,12 +9,18 @@ service KeyValueStore {
   rpc slowDown(SlowDownRequest) returns (SlowDownResponse);
   rpc restore(RestoreRequest) returns (RestoreResponse);
 
+  // ----------------------- RPCs cluster centralitzat
+  // RPC per registrar Slaves al Master
+  rpc registerSlave(RegisterSlaveRequest) returns (RegisterSlaveResponse);
   // RPCs pel 2PC
   rpc canCommit(CommitRequest) returns (CommitResponse);
   rpc doCommit(CommitRequest) returns (Empty);
 
-  // RPC per registrar Slaves al Master
-  rpc registerSlave(RegisterSlaveRequest) returns (RegisterSlaveResponse);
+  // ----------------------- RPCs cluster descentralitzat
+  // RCP per registrar un node
+  rpc registerNode(RegisterNodeRequest) returns (RegisterNodeResponse);
+  // RPCs pel Quorum
+  rpc askVote(AskVoteRequest) returns (AskVoteResponse);
 }
 
 message PutRequest {
@@ -67,4 +73,21 @@ message RegisterSlaveRequest {
 message RegisterSlaveResponse {
   bool success = 1;
   map<string, string> state = 2;
+}
+
+message RegisterNodeRequest {
+  string address = 1;               // De la forma ip:port
+}
+
+message RegisterNodeResponse {
+  bool success = 1;
+  map<string, string> state = 2;
+}
+
+message AskVoteRequest {
+  string key = 1;
+}
+
+message AskVoteResponse {
+  bool weight = 1;
 }

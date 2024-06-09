@@ -19,7 +19,6 @@ def load_config(config_file):
 
 # Funció per gestionar les senyals SIGINT i SIGTERM
 def signal_handler(sig, frame):
-    print(f'Signal {sig} received. Terminating processes gracefully.')
     master_process.terminate()
     for slave_process in slave_processess:
         slave_process.terminate()

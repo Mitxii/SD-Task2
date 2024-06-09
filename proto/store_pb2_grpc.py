@@ -34,6 +34,11 @@ class KeyValueStoreStub(object):
                 request_serializer=store__pb2.RestoreRequest.SerializeToString,
                 response_deserializer=store__pb2.RestoreResponse.FromString,
                 )
+        self.registerSlave = channel.unary_unary(
+                '/distributedstore.KeyValueStore/registerSlave',
+                request_serializer=store__pb2.RegisterSlaveRequest.SerializeToString,
+                response_deserializer=store__pb2.RegisterSlaveResponse.FromString,
+                )
         self.canCommit = channel.unary_unary(
                 '/distributedstore.KeyValueStore/canCommit',
                 request_serializer=store__pb2.CommitRequest.SerializeToString,
@@ -44,10 +49,15 @@ class KeyValueStoreStub(object):
                 request_serializer=store__pb2.CommitRequest.SerializeToString,
                 response_deserializer=store__pb2.Empty.FromString,
                 )
-        self.registerSlave = channel.unary_unary(
-                '/distributedstore.KeyValueStore/registerSlave',
-                request_serializer=store__pb2.RegisterSlaveRequest.SerializeToString,
-                response_deserializer=store__pb2.RegisterSlaveResponse.FromString,
+        self.registerNode = channel.unary_unary(
+                '/distributedstore.KeyValueStore/registerNode',
+                request_serializer=store__pb2.RegisterNodeRequest.SerializeToString,
+                response_deserializer=store__pb2.RegisterNodeResponse.FromString,
+                )
+        self.askVote = channel.unary_unary(
+                '/distributedstore.KeyValueStore/askVote',
+                request_serializer=store__pb2.AskVoteRequest.SerializeToString,
+                response_deserializer=store__pb2.AskVoteResponse.FromString,
                 )
 
 
@@ -78,6 +88,14 @@ class KeyValueStoreServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def registerSlave(self, request, context):
+        """----------------------- RPCs cluster centralitzat
+        RPC per registrar Slaves al Master
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def canCommit(self, request, context):
         """RPCs pel 2PC
         """
@@ -91,8 +109,16 @@ class KeyValueStoreServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def registerSlave(self, request, context):
-        """RPC per registrar Slaves al Master
+    def registerNode(self, request, context):
+        """----------------------- RPCs cluster descentralitzat
+        RCP per registrar un node
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def askVote(self, request, context):
+        """RPCs pel Quorum
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -121,6 +147,11 @@ def add_KeyValueStoreServicer_to_server(servicer, server):
                     request_deserializer=store__pb2.RestoreRequest.FromString,
                     response_serializer=store__pb2.RestoreResponse.SerializeToString,
             ),
+            'registerSlave': grpc.unary_unary_rpc_method_handler(
+                    servicer.registerSlave,
+                    request_deserializer=store__pb2.RegisterSlaveRequest.FromString,
+                    response_serializer=store__pb2.RegisterSlaveResponse.SerializeToString,
+            ),
             'canCommit': grpc.unary_unary_rpc_method_handler(
                     servicer.canCommit,
                     request_deserializer=store__pb2.CommitRequest.FromString,
@@ -131,10 +162,15 @@ def add_KeyValueStoreServicer_to_server(servicer, server):
                     request_deserializer=store__pb2.CommitRequest.FromString,
                     response_serializer=store__pb2.Empty.SerializeToString,
             ),
-            'registerSlave': grpc.unary_unary_rpc_method_handler(
-                    servicer.registerSlave,
-                    request_deserializer=store__pb2.RegisterSlaveRequest.FromString,
-                    response_serializer=store__pb2.RegisterSlaveResponse.SerializeToString,
+            'registerNode': grpc.unary_unary_rpc_method_handler(
+                    servicer.registerNode,
+                    request_deserializer=store__pb2.RegisterNodeRequest.FromString,
+                    response_serializer=store__pb2.RegisterNodeResponse.SerializeToString,
+            ),
+            'askVote': grpc.unary_unary_rpc_method_handler(
+                    servicer.askVote,
+                    request_deserializer=store__pb2.AskVoteRequest.FromString,
+                    response_serializer=store__pb2.AskVoteResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -215,6 +251,23 @@ class KeyValueStore(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def registerSlave(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/registerSlave',
+            store__pb2.RegisterSlaveRequest.SerializeToString,
+            store__pb2.RegisterSlaveResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def canCommit(request,
             target,
             options=(),
@@ -249,7 +302,7 @@ class KeyValueStore(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def registerSlave(request,
+    def registerNode(request,
             target,
             options=(),
             channel_credentials=None,
@@ -259,8 +312,25 @@ class KeyValueStore(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/registerSlave',
-            store__pb2.RegisterSlaveRequest.SerializeToString,
-            store__pb2.RegisterSlaveResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/registerNode',
+            store__pb2.RegisterNodeRequest.SerializeToString,
+            store__pb2.RegisterNodeResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def askVote(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/distributedstore.KeyValueStore/askVote',
+            store__pb2.AskVoteRequest.SerializeToString,
+            store__pb2.AskVoteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
