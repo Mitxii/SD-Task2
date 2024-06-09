@@ -66,4 +66,5 @@ message RegisterSlaveRequest {
 
 message RegisterSlaveResponse {
   bool success = 1;
+  map<string, string> state = 2;
 }

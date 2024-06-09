@@ -19,10 +19,11 @@ from node import Node
 # Classe Slave (filla de Node)
 class Slave(Node):
     
-    def __init__(self, id):
+    def __init__(self, id, state):
         super().__init__(id)
         self.action = ""
-        
+        self.data = state 
+    
     def canCommit(self, request, context):
         self.log("2PC available")
         time.sleep(self.delay)
@@ -35,15 +36,17 @@ def register_to_master(master_address, slave_address):
     response = stub.registerSlave(store_pb2.RegisterSlaveRequest(address=slave_address))
     if response.success:
         print(f"Slave {slave_address} registrat correctament al Master {master_address}")
+        return response.state
     else:
         print(f"No s'ha pogut registrar el Slave {slave_address} al Master {master_address}")
+        sys.exit(1)
 
 # Mètode per iniciar el servidor gRPC
 def serve(id, ip, port, master_address):
     slave_address = f"{ip}:{port}"
-    register_to_master(master_address, slave_address)
+    state = register_to_master(master_address, slave_address)
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Slave(id), server)
+    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Slave(id, state), server)
     server.add_insecure_port(slave_address)
     server.start()
     print(f"Slave escoltant al port {port}...")

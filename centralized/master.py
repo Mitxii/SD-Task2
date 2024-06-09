@@ -3,6 +3,7 @@ import time
 import sys
 import os
 import signal
+import pickle
 from concurrent import futures
 
 current_dir = os.path.dirname(__file__)
@@ -21,7 +22,11 @@ class Master(Node):
     
     def __init__(self, id):
         super().__init__(id)
+        # Slaves registrats
         self.slaves = []
+        # Fitxer de backup en cas de fallada
+        self.persistent_file = f"centralized/{id}_data.pkl"
+        self.load_state()
         
     def put(self, request, context):
         key = request.key
@@ -57,13 +62,24 @@ class Master(Node):
                 slave_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))
             return True
         
+    def save_state(self):
+        with open(self.persistent_file, 'wb') as f:
+            pickle.dump(self.data, f)
+    
+    def load_state(self):
+        if os.path.exists(self.persistent_file):
+            with open(self.persistent_file, 'rb') as f:
+                self.data = pickle.load(f)
+        else:
+            self.data = {}
+        
     def registerSlave(self, request, context):
         slave_address = request.address
         channel = grpc.insecure_channel(slave_address)
         slave_stub = store_pb2_grpc.KeyValueStoreStub(channel)
         self.slaves.append(slave_stub)
         self.log(f"Slave registrat {slave_address}")
-        return store_pb2.RegisterSlaveResponse(success=True)
+        return store_pb2.RegisterSlaveResponse(success=True, state=self.data)
 
 # Mètode per iniciar el servidor gRPC
 def serve(id, ip, port):
