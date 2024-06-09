@@ -27,7 +27,6 @@ class Master(Node):
         value = request.value
         
         # Protocol 2PC
-        self.log("Starting 2PC...")
         if self.two_phase_commit(key, value):
             self.data[key] = value
             self.log(f"set key={key}, value={value}")
@@ -41,6 +40,7 @@ class Master(Node):
     def two_phase_commit(self, key, value):
         can_commit = True
         
+        self.log("Starting 2PC...")
         i = 1
         for slave_stub in self.slaves:
             self.log(f"2PC request {i}")
@@ -60,6 +60,7 @@ class Master(Node):
         channel = grpc.insecure_channel(slave_address)
         slave_stub = store_pb2_grpc.KeyValueStoreStub(channel)
         self.slaves.append(slave_stub)
+        self.log(f"Slave registrat {slave_address}")
         return store_pb2.RegisterSlaveResponse(success=True)
 
 # Mètode per iniciar el servidor gRPC
