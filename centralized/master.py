@@ -22,7 +22,13 @@ class Master(Node):
         super().__init__(id)
         self.slaves = []
         
-    def put(self, request, context):        
+    def put(self, request, context):   
+        if not self.is_available:
+            time.sleep(self.delay)
+            return store_pb2.PutResponse(success=False)
+        else:
+            self.is_available = False
+             
         key = request.key
         value = request.value
         
@@ -31,11 +37,13 @@ class Master(Node):
         if self.two_phase_commit(key, value):
             self.data[key] = value
             self.log(f"2PC success -> set key={key}, value={value}")
+            self.is_available = True
             time.sleep(self.delay)
             return store_pb2.PutResponse(success=True)
         else:
             self.log("2PC failed")
             time.sleep(self.delay)
+            self.is_available = True
             return store_pb2.PutResponse(success=False)
         
     def two_phase_commit(self, key, value):
@@ -55,6 +63,8 @@ class Master(Node):
                 slave_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))
             return True
         else:
+            for slave_stub in self.slaves:
+                slave_stub.doAbort(store_pb2.Empty())
             return False
         
     def registerSlave(self, request, context):

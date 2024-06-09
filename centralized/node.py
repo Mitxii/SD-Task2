@@ -21,6 +21,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         self.id = id
         self.data = {}
         self.delay = 0
+        self.is_available = True
         
     def put(self, request, context):
         # Aquest mètode només l'implementarà el node Master
@@ -55,6 +56,12 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         self.data[key] = value
         self.log(f"set key={key}, value={value}")
         time.sleep(self.delay)
+        self.is_available = True
+        return store_pb2.Empty()
+    
+    def doAbort(self, request, context):
+        time.sleep(self.delay)
+        self.is_available = True
         return store_pb2.Empty()
     
     def log(self, msg):

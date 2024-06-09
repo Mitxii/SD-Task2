@@ -20,11 +20,17 @@ class Slave(Node):
     
     def __init__(self, id):
         super().__init__(id)
+        self.action = ""
         
     def canCommit(self, request, context):
-        self.log("2PC able")
         time.sleep(self.delay)
-        return store_pb2.CommitResponse(can_commit=True)
+        if self.is_available:
+            self.log("2PC available")
+            self.is_available = False
+            return store_pb2.CommitResponse(can_commit=True)
+        else:
+            self.log("2PC unavailable")
+            return store_pb2.CommitResponse(can_commit=False)
 
 # Mètode per registrar el Slave al Master
 def register_to_master(master_address, slave_address):
