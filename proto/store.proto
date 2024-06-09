@@ -12,7 +12,6 @@ service KeyValueStore {
   // RPCs pel 2PC
   rpc canCommit(CommitRequest) returns (CommitResponse);
   rpc doCommit(CommitRequest) returns (Empty);
-  rpc doAbort(Empty) returns (Empty);
 
   // RPC per registrar Slaves al Master
   rpc registerSlave(RegisterSlaveRequest) returns (RegisterSlaveResponse);

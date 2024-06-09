@@ -30,7 +30,7 @@ class Master(Node):
         self.log("Starting 2PC...")
         if self.two_phase_commit(key, value):
             self.data[key] = value
-            self.log(f"2PC success -> set key={key}, value={value}")
+            self.log(f"set key={key}, value={value}")
             time.sleep(self.delay)
             return store_pb2.PutResponse(success=True)
         else:
@@ -43,7 +43,7 @@ class Master(Node):
         
         i = 1
         for slave_stub in self.slaves:
-            self.log(f"2PC request to Slave {i}")
+            self.log(f"2PC request {i}")
             i += 1
             response = slave_stub.canCommit(store_pb2.CommitRequest(key=key, value=value))
             if not response.can_commit:
@@ -54,10 +54,6 @@ class Master(Node):
             for slave_stub in self.slaves:
                 slave_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))
             return True
-        else:
-            for slave_stub in self.slaves:
-                slave_stub.doAbort(store_pb2.Empty())
-            return False
         
     def registerSlave(self, request, context):
         slave_address = request.address

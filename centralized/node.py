@@ -57,10 +57,6 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         time.sleep(self.delay)
         return store_pb2.Empty()
     
-    def doAbort(self, request, context):
-        time.sleep(self.delay)
-        return store_pb2.Empty()
-    
     def log(self, msg):
         print(f"{colorama.Fore.YELLOW}[{self.id}]{colorama.Fore.RESET} {msg}")
         
