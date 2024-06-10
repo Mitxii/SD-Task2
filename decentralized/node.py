@@ -122,6 +122,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
     
     # Mètode per enviar el pes durant un Quorum
     def askVote(self, request, context):
+        self.log(f"Sending vote ({self.weight})")
         time.sleep(self.delay)
         return store_pb2.AskVoteResponse(weight=self.weight)
     

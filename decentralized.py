@@ -47,7 +47,6 @@ if __name__ == "__main__":
         process = start_node(node_id, node_ip, node_port, node_weight, ant_nodes, read_size, write_size)
         processess.append(process)
         ant_nodes.append(f"{node_ip}:{node_port}")
-        time.sleep(1)
         
     # Assignar el gestor de senyals per SIGINT i SIGTERM
     signal.signal(signal.SIGINT, signal_handler_INT)
