@@ -110,6 +110,7 @@ def serve(id, ip, port):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
+    # Bucle infinit
     while True:
         time.sleep(86400)
 

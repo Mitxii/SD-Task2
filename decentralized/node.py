@@ -33,7 +33,6 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         # Valors per reads i writes
         self.read_size = read_size
         self.write_size = write_size
-        self.log(f"Read={self.read_size}, Write={self.write_size}")
         
     # Mètode per guardar una dada
     def put(self, request, context):
@@ -42,6 +41,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         
         # Votació
         size = self.quorum(key)
+        
         # Si s'arriba al pes necessari per escriure...
         if size >= self.write_size:
             self.log(f"Quorum succeded on PUT. Required={self.write_size}, Obtained={size}")
@@ -75,9 +75,9 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
     # Mètode per implementar el protocol Quorum
     def quorum(self, key):
         self.log("Starting Quorum...")
-        size = 0
         
         # Fase de votació
+        size = 0
         for other_stub in self.other_nodes:
             response = other_stub.askVote(store_pb2.AskVoteRequest(key=key))
             size += response.weight
@@ -126,7 +126,6 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
 def register_to_node(other_address, my_address):
     channel = grpc.insecure_channel(other_address)
     stub = store_pb2_grpc.KeyValueStoreStub(channel)
-    print(f"Registrant {my_address} a {other_address}")
     response = stub.registerNode(store_pb2.RegisterNodeRequest(address=my_address))
     if response.success:
         print(f"Node {my_address} registrat correctament al Node {other_address}")
@@ -144,10 +143,14 @@ def serve(id, ip, port, weight, other_nodes, read_size, write_size):
     server.start()
     print(f"Node escoltant al port {port}...")
     
+    # Guardar l'adreça del node
     my_address = f"{ip}:{port}"
     
+    # Recórrer tots els nodes que ja formen part del clúster
     for other in other_nodes:
+        # Registrar el node actual al node iterat
         register_to_node(other, my_address)
+        # Registrar el node iterat al node actual
         register_to_node(my_address, other)
     
     # Funció per gestionar les senyals SIGINT i SIGTERM
@@ -160,6 +163,7 @@ def serve(id, ip, port, weight, other_nodes, read_size, write_size):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
+    # Bucle infinit
     while True:
         time.sleep(86400)
 
