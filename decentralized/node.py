@@ -41,6 +41,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         
         # Votació
         size = self.quorum(key)
+        size = size + self.weight
         
         # Si s'arriba al pes necessari per escriure...
         if size >= self.write_size:
@@ -48,9 +49,13 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
             for other_stub in self.other_nodes:
                 # El doCommit s'executa en un thread per evitar delays dels Nodes
                 threading.Thread(target=lambda: other_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))).start()
+            self.data[key] = value
+            self.log(f"set key={key}, value={value}")
+            time.sleep(self.delay)
             return store_pb2.PutResponse(success=True)
         else:
             self.log(f"Quorum failed on PUT. Required={self.write_size}, Obtained={size}")
+            time.sleep(self.delay)
             return store_pb2.PutResponse(success=False)
     
     # Mètode per obtenir una dada
@@ -70,6 +75,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
             return store_pb2.GetResponse(value=value, found=found)
         else:
             self.log(f"Quorum failed on GET. Required={self.read_size}, Obtained={size}")
+            time.sleep(self.delay)
             return store_pb2.GetResponse(value="", found=False)
     
     # Mètode per implementar el protocol Quorum
@@ -116,6 +122,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
     
     # Mètode per enviar el pes durant un Quorum
     def askVote(self, request, context):
+        time.sleep(self.delay)
         return store_pb2.AskVoteResponse(weight=self.weight)
     
     # Mètode per mostrar els logs
@@ -176,7 +183,7 @@ if __name__ == "__main__":
     id = sys.argv[1]
     ip = sys.argv[2]
     port = sys.argv[3]
-    weight = sys.argv[4]
+    weight = int(sys.argv[4])
     ant_nodes = json.loads(sys.argv[5])
     read_size = int(sys.argv[6])
     write_size = int(sys.argv[7])
