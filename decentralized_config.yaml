@@ -1,3 +1,7 @@
+quorum_sizes:
+  read: 2
+  write: 3
+
 nodes:
   - id: "node_0"
     ip: 127.0.0.1

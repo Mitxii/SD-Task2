@@ -89,5 +89,5 @@ message AskVoteRequest {
 }
 
 message AskVoteResponse {
-  bool weight = 1;
+  int32 weight = 1;
 }

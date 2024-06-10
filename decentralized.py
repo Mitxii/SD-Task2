@@ -5,8 +5,8 @@ import yaml
 import json
 
 # Mètode per iniciar un Node
-def start_node(id, ip, port, weight, ant_nodes):
-    return subprocess.Popen(["python3", "decentralized/node.py", id, ip, str(port), str(weight), json.dumps(ant_nodes)])
+def start_node(id, ip, port, weight, ant_nodes, read_size, write_size):
+    return subprocess.Popen(["python3", "decentralized/node.py", id, ip, str(port), str(weight), json.dumps(ant_nodes), str(read_size), str(write_size)])
 
 # Mètode per obtenir les dades d'un fitxer .yaml
 def load_config(config_file):
@@ -25,6 +25,8 @@ if __name__ == "__main__":
     config = load_config("decentralized_config.yaml")
     
     ant_nodes = []
+    read_size = config["quorum_sizes"]["read"]
+    write_size = config["quorum_sizes"]["write"]
     
     # Nodes
     nodes = config["nodes"]
@@ -34,7 +36,7 @@ if __name__ == "__main__":
         node_ip = node["ip"]
         node_port = node["port"]
         node_weight = node["weight"]
-        node_process = start_node(node_id, node_ip, node_port, node_weight, ant_nodes)
+        node_process = start_node(node_id, node_ip, node_port, node_weight, ant_nodes, read_size, write_size)
         ant_nodes.append(f"{node_ip}:{node_port}")
         node_processess.append(node_process)
         

@@ -1,4 +1,5 @@
 import grpc
+import threading
 import sys
 import os
 import time
@@ -22,36 +23,75 @@ import store_pb2, store_pb2_grpc
 class Node(store_pb2_grpc.KeyValueStoreServicer):
     
     # Constructor
-    def __init__(self, id, weight):
+    def __init__(self, id, weight, read_size, write_size):
         self.id = id
         self.weight = weight
         self.data = {}
         self.delay = 0
         # Altres nodes pel quorum
         self.other_nodes = []
+        # Valors per reads i writes
+        self.read_size = read_size
+        self.write_size = write_size
         
     # Mètode per guardar una dada
     def put(self, request, context):
         key = request.key
         value = request.value
         
-        # Protocol Quorum
-        for other_stub in self.other_nodes:
-            response = other_stub.askVote(store_pb2.AskVoteRequest(key=key))
-        
-        pass
+        # Votació
+        size = self.quorum(key)
+        self.log("HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        # Si s'arriba al pes necessari per escriure...
+        if size >= self.write_size:
+            self.log(f"Quorum succeded on PUT. Required={self.write_size}, Obtained={size}")
+            for other_stub in self.other_nodes:
+                # El doCommit s'executa en un thread per evitar delays dels Nodes
+                threading.Thread(target=lambda: other_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))).start()
+            return store_pb2.PutResponse(success=True)
+        else:
+            self.log(f"Quorum failed on PUT. Required={self.write_size}, Obtained={size}")
+            return store_pb2.PutResponse(success=False)
     
     # Mètode per obtenir una dada
     def get(self, request, context):
         key = request.key
-        value = self.data.get(key, "")
-        found = key in self.data
-        self.log(f"get key={key} -> value={value}")
-        time.sleep(self.delay)
-        return store_pb2.GetResponse(value=value, found=found)
+        
+        # Votació
+        size = self.quorum(key)
+        
+        # Si s'arriba al pes necessari per llegir...
+        if size >= self.read_size:
+            self.log(f"Quorum succeded on GET. Required={self.read_size}, Obtained={size}")
+            value = self.data.get(key, "")
+            found = key in self.data
+            self.log(f"get key={key} -> value={value}")
+            time.sleep(self.delay)
+            return store_pb2.GetResponse(value=value, found=found)
+        else:
+            self.log(f"Quorum failed on GET. Required={self.read_size}, Obtained={size}")
+            return store_pb2.GetResponse(value="", found=False)
     
-    def quorum(self):
-        pass
+    # Mètode per implementar el protocol Quorum
+    def quorum(self, key):
+        self.log("Starting Quorum...")
+        size = 0
+        
+        # Fase de votació
+        for other_stub in self.other_nodes:
+            response = other_stub.askVote(store_pb2.AskVoteRequest(key=key))
+            size += response.weight
+            
+        return size
+    
+    # Mètode per confirmar un Put
+    def doCommit(self, request, context):
+        key = request.key
+        value = request.value
+        self.data[key] = value
+        self.log(f"set key={key}, value={value}")
+        time.sleep(self.delay)
+        return store_pb2.Empty()
     
     # Mètode per afegir delay a un node en concret
     def slowDown(self, request, context):
@@ -96,9 +136,9 @@ def register_to_node(other_address, my_address):
         sys.exit(1)
 
 # Mètode per iniciar el servidor gRPC
-def serve(id, ip, port, weight, other_nodes):
+def serve(id, ip, port, weight, other_nodes, read_size, write_size):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Node(id, weight), server)
+    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Node(id, weight, read_size, write_size), server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
     print(f"Node escoltant al port {port}...")
@@ -127,8 +167,8 @@ def serve(id, ip, port, weight, other_nodes):
 
 # Main
 if __name__ == "__main__":
-    if len(sys.argv) != 6:
-        print("Ús: python3 node.py <id> <ip> <port> <weight> <ant_nodes>")
+    if len(sys.argv) != 8:
+        print("Ús: python3 node.py <id> <ip> <port> <weight> <ant_nodes> <read_size> <write_size>")
         sys.exit(1)
         
     id = sys.argv[1]
@@ -136,5 +176,7 @@ if __name__ == "__main__":
     port = sys.argv[3]
     weight = sys.argv[4]
     ant_nodes = json.loads(sys.argv[5])
-    serve(id, ip, port, weight, ant_nodes)
+    read_size = int(sys.argv[6])
+    write_size = int(sys.argv[7])
+    serve(id, ip, port, weight, ant_nodes, read_size, write_size)
         
