@@ -34,8 +34,10 @@ if __name__ == "__main__":
         node_ip = node["ip"]
         node_port = node["port"]
         node_weight = node["weight"]
+        print(f"Creant node {node_ip}:{node_port}")
         start_node(node_id, node_ip, node_port, node_weight, ant_nodes, read_size, write_size)
         ant_nodes.append(f"{node_ip}:{node_port}")
+        time.sleep(1)
         
     # Assignar el gestor de senyals per SIGINT i SIGTERM
     signal.signal(signal.SIGINT, signal_handler)

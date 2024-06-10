@@ -17,8 +17,14 @@ def load_config(config_file):
     with open(config_file, "r") as file:
         return yaml.safe_load(file)
 
-# Funció per gestionar les senyals SIGINT i SIGTERM
-def signal_handler(sig, frame):
+# Funció per gestionar la senyal SIGINT
+def signal_handler_INT(sig, frame):
+    sys.exit(0)
+    
+# Funció per gestionar la senyal SIGTERM
+def signal_handler_TERM(sig, frame):
+    for process in processess:
+        process.terminate()
     sys.exit(0)
 
 # Main
@@ -26,10 +32,14 @@ if __name__ == "__main__":
     # Obtenir configuració del fitxer centralized_config.yaml
     config = load_config("centralized_config.yaml")
     
+    # Processos de tots els nodes
+    processess = []
+    
     # Master
     master_ip = config["master"]["ip"]
     master_port = config["master"]["port"]
-    start_master("master", master_ip, master_port)
+    process = start_master("master", master_ip, master_port)
+    processess.append(process)
     time.sleep(1)
     
     # Slaves
@@ -38,12 +48,14 @@ if __name__ == "__main__":
         slave_id = slave["id"]
         slave_ip = slave["ip"]
         slave_port = slave["port"]
-        start_slave(slave_id, slave_ip, slave_port, master_ip, master_port)
+        process = start_slave(slave_id, slave_ip, slave_port, master_ip, master_port)
+        processess.append(process)
         
     # Assignar el gestor de senyals per SIGINT i SIGTERM
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)    
-        
+    signal.signal(signal.SIGINT, signal_handler_INT)
+    signal.signal(signal.SIGTERM, signal_handler_TERM)    
+    
+    # Bucle infinit
     while True:
         time.sleep(86400)
     

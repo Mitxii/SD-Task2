@@ -33,6 +33,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         # Valors per reads i writes
         self.read_size = read_size
         self.write_size = write_size
+        self.log(f"Read={self.read_size}, Write={self.write_size}")
         
     # Mètode per guardar una dada
     def put(self, request, context):
@@ -41,7 +42,6 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         
         # Votació
         size = self.quorum(key)
-        self.log("HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         # Si s'arriba al pes necessari per escriure...
         if size >= self.write_size:
             self.log(f"Quorum succeded on PUT. Required={self.write_size}, Obtained={size}")
@@ -105,18 +105,18 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         self.log(f"delayed restored")
         return store_pb2.SlowDownResponse(success=True)
     
-    # Mètode per enviar el pes durant un Quorum
-    def askVote(self, request, context):
-        return store_pb2.AskVoteResponse(weight=self.weight)
-    
     # Mètode per registrar un Node i passar-li l'estat actual
     def registerNode(self, request, context):
         other_address = request.address
         channel = grpc.insecure_channel(other_address)
-        slave_stub = store_pb2_grpc.KeyValueStoreStub(channel)
-        self.other_nodes.append(slave_stub)
+        other_stub = store_pb2_grpc.KeyValueStoreStub(channel)
+        self.other_nodes.append(other_stub)
         self.log(f"Node registrat {other_address}")
         return store_pb2.RegisterNodeResponse(success=True, state=self.data)
+    
+    # Mètode per enviar el pes durant un Quorum
+    def askVote(self, request, context):
+        return store_pb2.AskVoteResponse(weight=self.weight)
     
     # Mètode per mostrar els logs
     def log(self, msg):
