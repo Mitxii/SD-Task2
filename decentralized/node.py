@@ -24,10 +24,10 @@ import store_pb2, store_pb2_grpc
 class Node(store_pb2_grpc.KeyValueStoreServicer):
     
     # Constructor
-    def __init__(self, id, weight, read_size, write_size):
+    def __init__(self, id, weight, read_size, write_size, state):
         self.id = id
         self.weight = weight
-        self.data = {}
+        self.data = state
         self.delay = 0
         # Altres nodes pel quorum
         self.other_nodes = []
@@ -101,6 +101,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         key = request.key
         value = request.value
         self.data[key] = value
+        self.save_state()
         self.log(f"set key={key}, value={value}")
         time.sleep(self.delay)
         return store_pb2.Empty()
@@ -168,19 +169,22 @@ def register_to_node(other_address, my_address):
 
 # Mètode per iniciar el servidor gRPC
 def serve(id, ip, port, weight, other_nodes, read_size, write_size):
+    my_address = f"{ip}:{port}"
+    state = {}
+    
+    # Recórrer tots els nodes que ja formen part del clúster
+    for other in other_nodes:
+        # Registrar el node actual al node iterat i obtenir el seu estat
+        state = register_to_node(other, my_address)
+        
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Node(id, weight, read_size, write_size), server)
+    store_pb2_grpc.add_KeyValueStoreServicer_to_server(Node(id, weight, read_size, write_size, state), server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
     print(f"Node escoltant al port {port}...")
     
-    # Guardar l'adreça del node
-    my_address = f"{ip}:{port}"
-    
     # Recórrer tots els nodes que ja formen part del clúster
     for other in other_nodes:
-        # Registrar el node actual al node iterat
-        register_to_node(other, my_address)
         # Registrar el node iterat al node actual
         register_to_node(my_address, other)
     
