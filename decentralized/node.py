@@ -6,6 +6,7 @@ import time
 import colorama
 import signal
 import json
+import pickle
 from concurrent import futures
 
 # Inicialitzar colors terminal
@@ -33,6 +34,11 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         # Valors per reads i writes
         self.read_size = read_size
         self.write_size = write_size
+        # Variables pels backups
+        if not os.path.exists("decentralized/states"):
+            os.makedirs("decentralized/states")
+        self.persistent_file = f"decentralized/states/{id}_data.pkl"
+        self.load_state()
         
     # Mètode per guardar una dada
     def put(self, request, context):
@@ -41,7 +47,6 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         
         # Votació
         size = self.quorum(key)
-        size = size + self.weight
         
         # Si s'arriba al pes necessari per escriure...
         if size >= self.write_size:
@@ -50,6 +55,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
                 # El doCommit s'executa en un thread per evitar delays dels Nodes
                 threading.Thread(target=lambda: other_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))).start()
             self.data[key] = value
+            self.save_state()
             self.log(f"set key={key}, value={value}")
             time.sleep(self.delay)
             return store_pb2.PutResponse(success=True)
@@ -88,7 +94,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
             response = other_stub.askVote(store_pb2.AskVoteRequest(key=key))
             size += response.weight
             
-        return size
+        return size + self.weight
     
     # Mètode per confirmar un Put
     def doCommit(self, request, context):
@@ -122,9 +128,19 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
     
     # Mètode per enviar el pes durant un Quorum
     def askVote(self, request, context):
-        self.log(f"Sending vote ({self.weight})")
         time.sleep(self.delay)
         return store_pb2.AskVoteResponse(weight=self.weight)
+    
+    # Mètode per guardar l'estat actual
+    def save_state(self):
+        with open(self.persistent_file, 'wb') as f:
+            pickle.dump(self.data, f)
+    
+    # Mètode per carregar l'estat anterior (en cas de tenir)
+    def load_state(self):
+        if os.path.exists(self.persistent_file):
+            with open(self.persistent_file, 'rb') as f:
+                self.data = pickle.load(f)
     
     # Mètode per mostrar els logs
     def log(self, msg):
@@ -132,16 +148,23 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
 
 # Mètode per registrar el Slave al Master
 def register_to_node(other_address, my_address):
-    channel = grpc.insecure_channel(other_address)
-    stub = store_pb2_grpc.KeyValueStoreStub(channel)
-    response = stub.registerNode(store_pb2.RegisterNodeRequest(address=my_address))
-    if response.success:
-        print(f"Node {my_address} registrat correctament al Node {other_address}")
-        # Retornar l'estat del Master
-        return response.state
-    else:
-        print(f"No s'ha pogut registrar el Node {my_address} al Node {other_address}")
-        sys.exit(1)
+    while True:
+        try:
+            channel = grpc.insecure_channel(other_address)
+            stub = store_pb2_grpc.KeyValueStoreStub(channel)
+            response = stub.registerNode(store_pb2.RegisterNodeRequest(address=my_address))
+            if response.success:
+                print(f"Node {my_address} registrat correctament al Node {other_address}")
+                # Retornar l'estat del Master
+                return response.state
+            else:
+                print(f"No s'ha pogut registrar el Node {my_address} al Node {other_address}")
+                sys.exit(1)
+        except grpc._channel._InactiveRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                time.sleep(.5)
+            else:
+                raise e
 
 # Mètode per iniciar el servidor gRPC
 def serve(id, ip, port, weight, other_nodes, read_size, write_size):

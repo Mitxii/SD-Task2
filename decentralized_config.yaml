@@ -10,7 +10,7 @@ nodes:
   - id: "node_1"
     ip: 127.0.0.1
     port: 32771
-    weight: 1
+    weight: 2
   - id: "node_2"
     ip: 127.0.0.1
     port: 32772

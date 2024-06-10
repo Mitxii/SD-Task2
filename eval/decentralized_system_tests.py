@@ -140,7 +140,7 @@ class TestDecentralizedSystem(unittest.TestCase):
         self.stub.put(store_pb2.PutRequest(key="test_key", value="test_value"))
         response = self.stub.get(store_pb2.GetRequest(key="test_key"))
         self.assertEqual(response.value, "test_value")
-'''
+
     def test_concurrent_access(self):
         """Test handling of concurrent put and get requests."""
         self.logger.info("Testing concurrent access...")
@@ -194,7 +194,7 @@ class TestDecentralizedSystem(unittest.TestCase):
 
         self.assertLess(duration, 10, "The system took too long to perform the operations.")
 
-    
+   
     def test_system_scalability_and_performance_with_slowdown(self):
         
         """Test the system's scalability and performance by simulating high concurrent access (with a partitioned node)."""
@@ -277,7 +277,7 @@ class TestDecentralizedSystem(unittest.TestCase):
             self.assertEqual(get_response.value, "recovery_value", "Data was not correctly recovered.")
         except grpc.RpcError as e:
             self.fail(f"Operation failed after node recovery: {str(e)}")
-'''
+
 
 if __name__ == '__main__':
     runner = unittest.TextTestRunner(resultclass=unittest.TestResult, verbosity=2)
