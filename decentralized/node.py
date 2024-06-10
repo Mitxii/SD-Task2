@@ -116,7 +116,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         slave_stub = store_pb2_grpc.KeyValueStoreStub(channel)
         self.other_nodes.append(slave_stub)
         self.log(f"Node registrat {other_address}")
-        return store_pb2.RegisterSlaveResponse(success=True, state=self.data)
+        return store_pb2.RegisterNodeResponse(success=True, state=self.data)
     
     # Mètode per mostrar els logs
     def log(self, msg):
@@ -126,6 +126,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
 def register_to_node(other_address, my_address):
     channel = grpc.insecure_channel(other_address)
     stub = store_pb2_grpc.KeyValueStoreStub(channel)
+    print(f"Registrant {my_address} a {other_address}")
     response = stub.registerNode(store_pb2.RegisterNodeRequest(address=my_address))
     if response.success:
         print(f"Node {my_address} registrat correctament al Node {other_address}")
@@ -159,11 +160,8 @@ def serve(id, ip, port, weight, other_nodes, read_size, write_size):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    try:
-        while True:
-            time.sleep(86400)
-    except KeyboardInterrupt:
-        signal_handler(signal.SIGINT, None)
+    while True:
+        time.sleep(86400)
 
 # Main
 if __name__ == "__main__":

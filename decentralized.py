@@ -1,4 +1,5 @@
 import subprocess
+import time
 import sys
 import signal
 import yaml
@@ -15,8 +16,6 @@ def load_config(config_file):
 
 # Funció per gestionar les senyals SIGINT i SIGTERM
 def signal_handler(sig, frame):
-    for node_process in node_processess:
-        node_process.terminate()
     sys.exit(0)
 
 # Main
@@ -30,23 +29,18 @@ if __name__ == "__main__":
     
     # Nodes
     nodes = config["nodes"]
-    node_processess = []
     for node in nodes:
         node_id = node["id"]
         node_ip = node["ip"]
         node_port = node["port"]
         node_weight = node["weight"]
-        node_process = start_node(node_id, node_ip, node_port, node_weight, ant_nodes, read_size, write_size)
+        start_node(node_id, node_ip, node_port, node_weight, ant_nodes, read_size, write_size)
         ant_nodes.append(f"{node_ip}:{node_port}")
-        node_processess.append(node_process)
         
     # Assignar el gestor de senyals per SIGINT i SIGTERM
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)    
         
-    try:
-        for node_process in node_processess:
-            node_process.wait()
-    except KeyboardInterrupt:
-        signal_handler(signal.SIGINT, None)
+    while True:
+        time.sleep(86400)
     

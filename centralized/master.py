@@ -110,11 +110,8 @@ def serve(id, ip, port):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    try:
-        while True:
-            time.sleep(86400)
-    except KeyboardInterrupt:
-        signal_handler(signal.SIGINT, None)
+    while True:
+        time.sleep(86400)
 
 # Main
 if __name__ == "__main__":
