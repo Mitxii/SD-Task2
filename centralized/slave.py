@@ -24,7 +24,7 @@ class Slave(Node):
     def __init__(self, id, state):
         super().__init__(id)
         # L'estat inicial és l'obtingut al registrar-se al master per mantenir una consistència
-        self.data = state 
+        self.data = dict(state) 
     
     # Mètode per respondre a un 2PC
     def canCommit(self, request, context):

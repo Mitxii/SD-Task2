@@ -27,7 +27,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
     def __init__(self, id, weight, read_size, write_size, state):
         self.id = id
         self.weight = weight
-        self.data = state
+        self.data = dict(state)
         self.delay = 0
         # Altres nodes pel quorum
         self.other_nodes = []
