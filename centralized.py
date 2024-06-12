@@ -23,6 +23,7 @@ def signal_handler_INT(sig, frame):
     
 # Funció per gestionar la senyal SIGTERM
 def signal_handler_TERM(sig, frame):
+    time.sleep(1)
     for process in processess:
         process.terminate()
     sys.exit(0)
