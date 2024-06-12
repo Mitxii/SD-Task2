@@ -31,6 +31,16 @@ class Slave(Node):
         self.log("2PC available")
         time.sleep(self.delay)
         return store_pb2.CommitResponse(can_commit=True)
+    
+    # Mètode per confirmar un 2PC
+    def doCommit(self, request, context):
+        key = request.key
+        value = request.value
+        # Fer escriptura
+        self.write_value(key,value)
+        self.log(f"set key={key}, value={value}")
+        time.sleep(self.delay)
+        return store_pb2.Empty()
 
 # Mètode per registrar el Slave al Master
 def register_to_master(master_address, slave_address):

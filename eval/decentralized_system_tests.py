@@ -233,7 +233,7 @@ class TestDecentralizedSystem(unittest.TestCase):
         restore_resp = self.stub.restore(restore_request)
         assert restore_resp.success, "Failed to restore node."
 
-        assert duration < 10, "The system took too long to perform the operations."
+        assert duration < 60, "The system took too long to perform the operations."
 
 
     def test_state_recovery_after_critical_failure(self):

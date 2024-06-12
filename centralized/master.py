@@ -37,16 +37,18 @@ class Master(Node):
         value = request.value
         
         # Protocol 2PC
-        if self.two_phase_commit(key, value):
-            self.data[key] = value
-            self.save_state()                               # Desar l'estat després de l'operació
+        success = self.two_phase_commit(key, value)
+        if success:
+            # Fer escriptura
+            self.write_value(key,value)
+            # Guardar estat després de l'operació
+            self.save_state()
             self.log(f"set key={key}, value={value}")
-            time.sleep(self.delay)
-            return store_pb2.PutResponse(success=True)
         else:
             self.log("2PC failed. Aborting...")
-            time.sleep(self.delay)
-            return store_pb2.PutResponse(success=False)
+            
+        time.sleep(self.delay)
+        return store_pb2.PutResponse(success=success)
     
     # Mètode per implementar el protocol 2PC
     def two_phase_commit(self, key, value):
@@ -58,17 +60,22 @@ class Master(Node):
         for slave_stub in self.slaves:
             self.log(f"2PC request {i}")
             i += 1
-            response = slave_stub.canCommit(store_pb2.CommitRequest(key=key, value=value))
-            if not response.can_commit:
-                can_commit = False
-                break
+            try:
+                response = slave_stub.canCommit(store_pb2.CommitRequest(key=key, value=value))
+                if not response.can_commit:
+                    can_commit = False
+                    break
+            except grpc.RpcError as e:
+                self.log(f"error connecting to slave. Removing from registered ones...")
+                self.slaves.remove(slave_stub)
         
         # Fase 2 (decisió)
         if can_commit:
             for slave_stub in self.slaves:
                 # El doCommit s'executa en un thread per evitar delays dels Slaves
                 threading.Thread(target=lambda: slave_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))).start()
-            return True
+
+        return can_commit        
     
     # Mètode per guardar l'estat actual
     def save_state(self):

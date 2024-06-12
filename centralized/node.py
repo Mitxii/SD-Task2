@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import colorama
+import threading
 from concurrent import futures
 
 # Inicialitzar colors terminal
@@ -23,6 +24,8 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         self.id = id
         self.data = {}
         self.delay = 0
+        # Lock per les lectures i escriptures
+        self.lock = threading.Lock()
         
     # Mètode per guardar una dada
     def put(self, request, context):
@@ -32,8 +35,12 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
     # Mètode per obtenir una dada
     def get(self, request, context):
         key = request.key
-        value = self.data.get(key, "")
         found = key in self.data
+        # Fer lectura -------------
+        self.lock.acquire()
+        value = self.data.get(key, "")
+        self.lock.release()
+        # -------------------------
         self.log(f"get key={key} -> value={value}")
         time.sleep(self.delay)
         return store_pb2.GetResponse(value=value, found=found)
@@ -52,17 +59,19 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
     
     # Mètode per iniciar un 2PC
     def canCommit(self, request, context):
-        # Aquest mètode serà sobreescrit pels Slaves
-        return store_pb2.CommitResponse(can_commit=True)
+        # Aquest mètode només l'implementaran els Slaves
+        pass
     
     # Mètode per confirmar un 2PC
     def doCommit(self, request, context):
-        key = request.key
-        value = request.value
+        # Aquest mètode només l'implementaran els Slaves
+        pass
+    
+    # Mètode per fer una escriptura mitjançant Locks
+    def write_value(self, key, value):
+        self.lock.acquire()
         self.data[key] = value
-        self.log(f"set key={key}, value={value}")
-        time.sleep(self.delay)
-        return store_pb2.Empty()
+        self.lock.release()
     
     # Mètode per mostrar els logs
     def log(self, msg):
