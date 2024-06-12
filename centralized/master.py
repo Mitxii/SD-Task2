@@ -26,7 +26,7 @@ class Master(Node):
     def __init__(self, id):
         super().__init__(id)
         # Slaves registrats
-        self.slaves = []
+        self.slaves = {}
         # Fitxer de backup en cas de fallada
         self.persistent_file = f"centralized/{id}_data.pkl"
         self.load_state()
@@ -52,12 +52,12 @@ class Master(Node):
     
     # Mètode per implementar el protocol 2PC
     def two_phase_commit(self, key, value):
-        self.log("Starting 2PC...")
+        self.log("starting 2PC...")
         can_commit = True
         
         # Fase 1 (votació)
         i = 1
-        for slave_stub in self.slaves:
+        for slave_address, slave_stub in self.slaves.items():
             self.log(f"2PC request {i}")
             i += 1
             try:
@@ -66,16 +66,22 @@ class Master(Node):
                     can_commit = False
                     break
             except grpc.RpcError as e:
-                self.log(f"error connecting to slave. Removing from registered ones...")
-                self.slaves.remove(slave_stub)
+                self.log(f"error connecting to slave while voting")
         
         # Fase 2 (decisió)
         if can_commit:
-            for slave_stub in self.slaves:
-                # El doCommit s'executa en un thread per evitar delays dels Slaves
-                threading.Thread(target=lambda: slave_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))).start()
+            # Els doCommit s'executen en un thread per evitar delays dels Slaves
+            threading.Thread(target=self.do_commit, args=(key, value,)).start()
 
-        return can_commit        
+        return can_commit
+    
+    # Mètode per confirmar un 2PC
+    def do_commit(self, key, value):
+        for slave_addres, slave_stub in self.slaves.items():
+            try:
+                slave_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))
+            except grpc.RpcError as e:
+                self.log(f"error connecting to slave while committing")
     
     # Mètode per guardar l'estat actual
     def save_state(self):
@@ -95,8 +101,8 @@ class Master(Node):
         slave_address = request.address
         channel = grpc.insecure_channel(slave_address)
         slave_stub = store_pb2_grpc.KeyValueStoreStub(channel)
-        self.slaves.append(slave_stub)
-        self.log(f"Slave registrat {slave_address}")
+        self.slaves[slave_address] = slave_stub
+        self.log(f"registered slave {slave_address}")
         return store_pb2.RegisterSlaveResponse(success=True, state=self.data)
 
 # Mètode per iniciar el servidor gRPC

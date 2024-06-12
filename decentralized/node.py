@@ -30,7 +30,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         self.data = dict(state)
         self.delay = 0
         # Altres nodes pel quorum
-        self.other_nodes = []
+        self.other_nodes = {}
         # Valors per reads i writes
         self.read_size = read_size
         self.write_size = write_size
@@ -51,9 +51,9 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         # Si s'arriba al pes necessari per escriure...
         if size >= self.write_size:
             self.log(f"Quorum succeded on PUT. Required={self.write_size}, Obtained={size}")
-            for other_stub in self.other_nodes:
-                # El doCommit s'executa en un thread per evitar delays dels Nodes
-                threading.Thread(target=lambda: other_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))).start()
+            # Confirmar escriptura a la resta de nodes
+            threading.Thread(target=self.do_commit, args=(key, value,)).start()
+            # Fer escriptura
             self.data[key] = value
             self.save_state()
             self.log(f"set key={key}, value={value}")
@@ -63,6 +63,14 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
             self.log(f"Quorum failed on PUT. Required={self.write_size}, Obtained={size}")
             time.sleep(self.delay)
             return store_pb2.PutResponse(success=False)
+    
+    # Mètode per confirmar un Quorum
+    def do_commit(self, key, value):
+        for other_address, other_stub in self.other_nodes.items():
+            try:
+                other_stub.doCommit(store_pb2.CommitRequest(key=key, value=value))
+            except grpc.RpcError as e:
+                self.log(f"error connecting to node while committing")
     
     # Mètode per obtenir una dada
     def get(self, request, context):
@@ -74,6 +82,7 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         # Si s'arriba al pes necessari per llegir...
         if size >= self.read_size:
             self.log(f"Quorum succeded on GET. Required={self.read_size}, Obtained={size}")
+            # Fer lectura
             value = self.data.get(key, "")
             found = key in self.data
             self.log(f"get key={key} -> value={value}")
@@ -88,12 +97,15 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
     def quorum(self, key):
         self.log("Starting Quorum...")
         
-        # Fase de votació
+        # Fase 1 (votació)
         size = 0
-        for other_stub in self.other_nodes:
-            response = other_stub.askVote(store_pb2.AskVoteRequest(key=key))
-            size += response.weight
-            
+        for other_address, other_stub in self.other_nodes.items():
+            try:
+                response = other_stub.askVote(store_pb2.AskVoteRequest(key=key))
+                size += response.weight
+            except grpc.RpcError as e:
+                self.log(f"error connecting to node while voting")
+        
         return size + self.weight
     
     # Mètode per confirmar un Put
@@ -123,8 +135,8 @@ class Node(store_pb2_grpc.KeyValueStoreServicer):
         other_address = request.address
         channel = grpc.insecure_channel(other_address)
         other_stub = store_pb2_grpc.KeyValueStoreStub(channel)
-        self.other_nodes.append(other_stub)
-        self.log(f"Node registrat {other_address}")
+        self.other_nodes[other_address] = other_stub
+        self.log(f"registered node {other_address}")
         return store_pb2.RegisterNodeResponse(success=True, state=self.data)
     
     # Mètode per enviar el pes durant un Quorum
