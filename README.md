@@ -65,7 +65,18 @@ Each component of the project is organized into its respective directory, facili
 
 > **Note:** Students are required to define the necessary stubs for implementing the Two Phase Commit (2PC) protocol and for node registration in the system. These stubs must be manually added to the store.proto file by the students as part of their implementation.
 
+## Breu descripció
+El projecte consisteix en la implementació de dos sistemes distribuïts per a gestionar un espai d'emmagatzematge del tipus key-value mitjançant Python i gRPC.
+Les dues implementacions són:
+  - Centralitzada --> Conté un node Master i la resta sòn Slaves. Utilitza un protocol 2PC per la consistència i únicament el Master pot resoldre peticions d'escriptura.
+  - Descentralitzada --> Tots els nodes són iguals i poden rebre tant peticions d'escriptura com de lectura. Utilitza un quòrum per prendre les decisions.
 
+## Ús
+Passos a seguir per utilitzar el projecte en un entorn Linux:
 
-python -m grpc_tools.protoc -I=proto --python_out=proto --grpc_python_out=proto proto/store.proto
-
+1. Utilitzar l'entorn 'venv'                                      source venv/bin/activate
+2. Instal·lar els mòduls necessaris                               pip3 install -r requirements.txt
+3. Executar script desitjat:
+  3.1. Executar sistema centralitzat                              python3 centralized.py
+  3.2. Executar sistema descentralitzat                           python3 decentralized.py
+  3.1. Executar proves                                            python3 eval/eval.py
